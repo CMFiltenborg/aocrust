@@ -32,6 +32,8 @@ fn main() {
         (2, 2) => day2p2,
         (3, 1) => day3p1,
         (3, 2) => day3p2,
+        (4, 1) => day4p1,
+        (4, 2) => day4p1,
         _ => panic!("Unimplemented day")
     };
     callable(contents);
@@ -220,4 +222,30 @@ fn day3p2(contents: String) {
 }
 
 
+fn day4p1(contents: String) {
+    let lines: Vec<&str> = contents.lines().collect();
+    let result = lines.into_iter()
+        .map(parse_pair)
+        .map(contains)
+        .filter(|x| *x == true)
+        .count();
+
+    fn parse_pair(line: &str) -> (i32, i32, i32, i32) {
+        let pairs: Vec<&str> = line.split(',').collect();
+        let pair1 = pairs[0];
+        let pair1: Vec<&str>  = pair1.split('-').collect();
+        let (d1, d2) = (pair1[0], pair1[1]);
+        let pair2 = pairs[1];
+        let pair2: Vec<&str> = pair2.split('-').collect();
+        let (d3, d4) = (pair2[0], pair2[1]);
+        (d1.parse::<i32>().unwrap(), d2.parse::<i32>().unwrap(), d3.parse::<i32>().unwrap(), d4.parse::<i32>().unwrap())
+    }
+    fn contains((d1, d2, d3, d4): (i32, i32,i32,i32)) -> bool {
+        (d3 >= d1 && d4 <= d2) || (d3 <= d1 && d4 >= d2)
+    }
+
+    println!("{result}")
+}
+
+fn day4p2(contents: String) {}
 
