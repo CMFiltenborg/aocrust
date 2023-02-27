@@ -22,7 +22,7 @@ fn main() {
         Ok(part) => part,
         Err(error) => panic!("Specify the part of the day (1 or 2): {}", error)
     };
-    let file_path = format!("../data/input{day_num}.txt");
+    let file_path = format!("data/input{day_num}.txt");
     let contents = fs::read_to_string(file_path)
         .expect("Should have been able to read the file");
 
@@ -37,14 +37,16 @@ fn main() {
         (4, 2) => day4p2,
         (5, 1) => day5p1,
         (5, 2) => day5p2,
+        (6, 1) => day6p1,
+        (6, 2) => day6p2,
         _ => panic!("Unimplemented day")
     };
-    let solution = callable(contents);
+    let solution: String = callable(contents);
 
     println!("The solution for day {day_num} part {part} is: {solution}")
 }
 
-fn day1(contents: String) -> i32 {
+fn day1(contents: String) -> String {
     let lines = contents.lines();
     let mut max_cals = 0;
     let mut curr = 0;
@@ -58,10 +60,10 @@ fn day1(contents: String) -> i32 {
         let cals = line.parse::<i32>().unwrap();
         curr = curr + cals;
     }
-    max_cals
+    max_cals.to_string()
 }
 
-fn day1p2(contents: String) -> i32 {
+fn day1p2(contents: String) -> String {
     let lines = contents.lines();
     let mut elves: Vec<i32> = vec![];
     let mut accum = 0;
@@ -76,7 +78,7 @@ fn day1p2(contents: String) -> i32 {
     }
     elves.sort();
     let largest_3 = elves.iter().rev().take(3).sum::<i32>();
-    largest_3
+    largest_3.to_string()
 }
 
 
@@ -87,7 +89,7 @@ fn day1p2(contents: String) -> i32 {
 // (0 if you lost, 3 if the round was a draw, and 6 if you won).
 // A for Rock, B for Paper, and C for Scissors.
 // X for Rock, Y for Paper, and Z for Scissors.
-fn day2p1(contents: String) -> i32 {
+fn day2p1(contents: String) -> String {
     let lines = contents.lines();
 
     fn game_score(s: &str) -> i32 {
@@ -115,10 +117,10 @@ fn day2p1(contents: String) -> i32 {
     }
 
     let objs: i32 = lines.map(game_score).sum();
-    objs
+    objs.to_string()
 }
 
-fn day2p2(contents: String) -> i32 {
+fn day2p2(contents: String) -> String {
     let lines = contents.lines();
 
     fn game_score(s: &str) -> i32 {
@@ -158,7 +160,7 @@ fn day2p2(contents: String) -> i32 {
     }
 
     let objs: i32 = lines.map(game_score).sum();
-    objs
+    objs.to_string()
 }
 
 fn split_middle(line: &str) -> (&str, &str) {
@@ -202,17 +204,17 @@ fn letter_to_priority(a: char) -> u32 {
     base + a.to_digit(36).unwrap() - 9
 }
 
-fn day3p1(contents: String) -> i32 {
+fn day3p1(contents: String) -> String {
     let lines = contents.lines();
     let result = lines.map(split_middle)
         .map(common_letter)
         .map(letter_to_priority)
         .sum::<u32>() as i32;
 
-    result
+    result.to_string()
 }
 
-fn day3p2(contents: String) -> i32 {
+fn day3p2(contents: String) -> String {
     let lines: Vec<&str> = contents.lines().collect();
 
     let result =
@@ -221,7 +223,7 @@ fn day3p2(contents: String) -> i32 {
             .map(letter_to_priority)
             .sum::<u32>() as i32;
 
-    result
+    result.to_string()
 }
 
 fn parse_pair(line: &str) -> (i32, i32, i32, i32) {
@@ -235,7 +237,7 @@ fn parse_pair(line: &str) -> (i32, i32, i32, i32) {
     (d1.parse::<i32>().unwrap(), d2.parse::<i32>().unwrap(), d3.parse::<i32>().unwrap(), d4.parse::<i32>().unwrap())
 }
 
-fn day4p1(contents: String) -> i32 {
+fn day4p1(contents: String) -> String {
     let lines: Vec<&str> = contents.lines().collect();
     let result = lines.into_iter()
         .map(parse_pair)
@@ -243,14 +245,14 @@ fn day4p1(contents: String) -> i32 {
         .filter(|x| *x == true)
         .count() as i32;
 
-    result
+    result.to_string()
 }
 
 fn contains((d1, d2, d3, d4): (i32, i32, i32, i32)) -> bool {
     (d3 >= d1 && d4 <= d2) || (d3 <= d1 && d4 >= d2)
 }
 
-fn day4p2(contents: String) -> i32 {
+fn day4p2(contents: String) -> String {
     let lines: Vec<&str> = contents.lines().collect();
     let result = lines.into_iter()
         .map(parse_pair)
@@ -263,15 +265,15 @@ fn day4p2(contents: String) -> i32 {
             (d2 >= d3 && d1 <= d4) // X is bigger or eq but touching
     }
 
-    result
+    result.to_string()
 }
 
-fn day5p1(contents: String) -> i32 {
+fn day5p1(contents: String) -> String {
     let lines: Vec<&str> = contents.lines().collect();
     let (stack_lines, moves) = lines.split_at(8);
     let (_, moves) = moves.split_at(2);
 
-    let mut stacks = vec![vec![]; 9];
+    let stacks = vec![vec![]; 9];
     let stacks: Vec<Vec<char>> = stack_lines.iter()
         .map(parse_stack_line)
         .fold(stacks, |acc, stack_line| {
@@ -283,7 +285,7 @@ fn day5p1(contents: String) -> i32 {
             }
             acc
         });
-    let mut stacks: Vec<Vec<char>> = stacks.into_iter().map(|mut x| {
+    let stacks: Vec<Vec<char>> = stacks.into_iter().map(|mut x| {
         x.reverse();
         x
     }).collect();
@@ -301,14 +303,14 @@ fn day5p1(contents: String) -> i32 {
         .map(|x| x.unwrap())
         .collect();
 
-    let result_stacks: Vec<Vec<char>>  = moves
+    let result_stacks: Vec<Vec<char>> = moves
         .into_iter()
         .fold(stacks, |curr_stacks, entry| {
             let mut stacks = curr_stacks.clone();
             let (from, to) = (entry.1 as usize, entry.2 as usize);
             for i in 0..entry.0 {
-                let item = stacks[from-1].pop().unwrap();
-                stacks[to-1].push(item);
+                let item = stacks[from - 1].pop().unwrap();
+                stacks[to - 1].push(item);
             }
             stacks
         });
@@ -317,9 +319,7 @@ fn day5p1(contents: String) -> i32 {
         .map(|x| *x.last().unwrap())
         .collect();
 
-    println!("{}", top_crates);
-
-    0
+    top_crates
 }
 
 fn parse_stack_line<'a>(line: &'a &'a str) -> Vec<Option<char>> {
@@ -333,168 +333,241 @@ fn parse_stack_line<'a>(line: &'a &'a str) -> Vec<Option<char>> {
         .collect()
 }
 
-fn day5p2(contents: String) -> i32 {
+fn day5p2(contents: String) -> String {
+    let lines: Vec<&str> = contents.lines().collect();
+    let (stack_lines, moves) = lines.split_at(8);
+    let (_, moves) = moves.split_at(2);
+
+    let stacks = vec![vec![]; 9];
+    let stacks: Vec<Vec<char>> = stack_lines.iter()
+        .map(parse_stack_line)
+        .fold(stacks, |acc, stack_line| {
+            let mut acc = acc.clone();
+            for (i, x) in stack_line.into_iter().enumerate() {
+                if x.is_some() {
+                    acc[i].push(x.unwrap());
+                }
+            }
+            acc
+        });
+    let stacks: Vec<Vec<char>> = stacks.into_iter().map(|mut x| {
+        x.reverse();
+        x
+    }).collect();
+
+    fn parse_moves(x: &&str) -> Option<(i32, i32, i32)> {
+        let split: Vec<&str> = x.split(' ').collect();
+        if split.len() < 3 {
+            return None;
+        }
+        let nums: Vec<i32> = vec![split[1], split[3], split[5]].into_iter().map(|x| x.parse::<i32>().unwrap()).collect();
+        Some((nums[0], nums[1], nums[2]))
+    }
+    let moves: Vec<(i32, i32, i32)> = moves.into_iter().map(parse_moves)
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .collect();
+
+    let result_stacks: Vec<Vec<char>> = moves
+        .into_iter()
+        .fold(stacks, |curr_stacks, entry| {
+            let mut stacks = curr_stacks.clone();
+            let (num, from, to) = (entry.0 as usize, entry.1 as usize, entry.2 as usize);
+
+            let from_stack = &mut stacks[from - 1];
+            let items: Vec<char> = from_stack[(from_stack.len() - num)..].to_vec();
+            let to_stack = &mut stacks[to - 1];
+
+            for item in items {
+                to_stack.push(item);
+            }
+            for i in 0..entry.0 {
+                stacks[from - 1].pop();
+            }
+
+            stacks
+        });
+    let top_crates: String = result_stacks
+        .into_iter()
+        .map(|x| *x.last().unwrap())
+        .collect();
+
+    top_crates
+}
+
+fn day6p1(contents: String) -> String {
+    get_first_marker(&contents, 4).to_string()
+}
+
+fn day6p2(contents: String) -> String {
+    get_first_marker(&contents, 14).to_string()
+}
+
+fn get_first_marker(line: &str, marker_size: i32) -> i32 {
+    let is_marker = |c: char, pos: i32, chars: &str| -> bool {
+        let hs: HashSet<char> = HashSet::from_iter(chars.chars());
+        hs.len() == (marker_size as usize)
+    };
+
+    for (i, marker) in line[3..].chars().enumerate() {
+        if is_marker(marker, i as i32, &line[i..i+marker_size as usize]) {
+            return (i) as i32 + marker_size
+        }
+    }
+
     0
 }
 
-fn day6p1(contents: String) -> i32 {
-    0
+fn day7p1(contents: String) -> String {
+    String::new()
 }
 
-fn day6p2(contents: String) -> i32 {
-    0
+fn day7p2(contents: String) -> String {
+    String::new()
 }
 
-fn day7p1(contents: String) -> i32 {
-    0
+fn day8p1(contents: String) -> String {
+    String::new()
 }
 
-fn day7p2(contents: String) -> i32 {
-    0
+fn day8p2(contents: String) -> String {
+    String::new()
 }
 
-fn day8p1(contents: String) -> i32 {
-    0
+fn day9p1(contents: String) -> String {
+    String::new()
 }
 
-fn day8p2(contents: String) -> i32 {
-    0
+fn day9p2(contents: String) -> String {
+    String::new()
 }
 
-fn day9p1(contents: String) -> i32 {
-    0
+fn day10p1(contents: String) -> String {
+    String::new()
 }
 
-fn day9p2(contents: String) -> i32 {
-    0
+fn day10p2(contents: String) -> String {
+    String::new()
 }
 
-fn day10p1(contents: String) -> i32 {
-    0
+fn day11p1(contents: String) -> String {
+    String::new()
 }
 
-fn day10p2(contents: String) -> i32 {
-    0
+fn day11p2(contents: String) -> String {
+    String::new()
 }
 
-fn day11p1(contents: String) -> i32 {
-    0
+fn day12p1(contents: String) -> String {
+    String::new()
 }
 
-fn day11p2(contents: String) -> i32 {
-    0
+fn day12p2(contents: String) -> String {
+    String::new()
 }
 
-fn day12p1(contents: String) -> i32 {
-    0
+fn day13p1(contents: String) -> String {
+    String::new()
 }
 
-fn day12p2(contents: String) -> i32 {
-    0
+fn day13p2(contents: String) -> String {
+    String::new()
 }
 
-fn day13p1(contents: String) -> i32 {
-    0
+fn day14p1(contents: String) -> String {
+    String::new()
 }
 
-fn day13p2(contents: String) -> i32 {
-    0
+fn day14p2(contents: String) -> String {
+    String::new()
 }
 
-fn day14p1(contents: String) -> i32 {
-    0
+fn day15p1(contents: String) -> String {
+    String::new()
 }
 
-fn day14p2(contents: String) -> i32 {
-    0
+fn day15p2(contents: String) -> String {
+    String::new()
 }
 
-fn day15p1(contents: String) -> i32 {
-    0
+fn day16p1(contents: String) -> String {
+    String::new()
 }
 
-fn day15p2(contents: String) -> i32 {
-    0
+fn day16p2(contents: String) -> String {
+    String::new()
 }
 
-fn day16p1(contents: String) -> i32 {
-    0
+fn day17p1(contents: String) -> String {
+    String::new()
 }
 
-fn day16p2(contents: String) -> i32 {
-    0
+fn day17p2(contents: String) -> String {
+    String::new()
 }
 
-fn day17p1(contents: String) -> i32 {
-    0
+fn day18p1(contents: String) -> String {
+    String::new()
 }
 
-fn day17p2(contents: String) -> i32 {
-    0
+fn day18p2(contents: String) -> String {
+    String::new()
 }
 
-fn day18p1(contents: String) -> i32 {
-    0
+fn day19p1(contents: String) -> String {
+    String::new()
 }
 
-fn day18p2(contents: String) -> i32 {
-    0
+fn day19p2(contents: String) -> String {
+    String::new()
 }
 
-fn day19p1(contents: String) -> i32 {
-    0
+fn day20p1(contents: String) -> String {
+    String::new()
 }
 
-fn day19p2(contents: String) -> i32 {
-    0
+fn day20p2(contents: String) -> String {
+    String::new()
 }
 
-fn day20p1(contents: String) -> i32 {
-    0
+fn day21p1(contents: String) -> String {
+    String::new()
 }
 
-fn day20p2(contents: String) -> i32 {
-    0
+fn day21p2(contents: String) -> String {
+    String::new()
 }
 
-fn day21p1(contents: String) -> i32 {
-    0
+fn day22p1(contents: String) -> String {
+    String::new()
 }
 
-fn day21p2(contents: String) -> i32 {
-    0
+fn day22p2(contents: String) -> String {
+    String::new()
 }
 
-fn day22p1(contents: String) -> i32 {
-    0
+fn day23p1(contents: String) -> String {
+    String::new()
 }
 
-fn day22p2(contents: String) -> i32 {
-    0
+fn day23p2(contents: String) -> String {
+    String::new()
 }
 
-fn day23p1(contents: String) -> i32 {
-    0
+fn day24p1(contents: String) -> String {
+    String::new()
 }
 
-fn day23p2(contents: String) -> i32 {
-    0
+fn day24p2(contents: String) -> String {
+    String::new()
 }
 
-fn day24p1(contents: String) -> i32 {
-    0
+fn day25p1(contents: String) -> String {
+    String::new()
 }
 
-fn day24p2(contents: String) -> i32 {
-    0
-}
-
-fn day25p1(contents: String) -> i32 {
-    0
-}
-
-fn day25p2(contents: String) -> i32 {
-    0
+fn day25p2(contents: String) -> String {
+    String::new()
 }
 
 
@@ -507,5 +580,12 @@ mod tests {
         let r = parse_stack_line(&"[V]     [B]                     [F]");
 
         assert_eq!(r, vec![Some('V'), None, Some('B'), None, None, None, None, None, Some('F')]);
+    }
+
+    #[test]
+    fn test_char_marker() {
+        let r = get_first_marker("bvwbjplbgvbhsrlpgdmjqwftvncz", 4);
+
+        assert_eq!(r, 5);
     }
 }
