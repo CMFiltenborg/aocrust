@@ -5,9 +5,11 @@
 use std::env;
 use std::{cmp, fs};
 use std::str::Lines;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::slice::Chunks;
+use predicates::prelude::*;
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -39,6 +41,8 @@ fn main() {
         (5, 2) => day5p2,
         (6, 1) => day6p1,
         (6, 2) => day6p2,
+        (7, 1) => day7p1,
+        (7, 2) => day7p2,
         _ => panic!("Unimplemented day")
     };
     let solution: String = callable(contents);
@@ -410,16 +414,204 @@ fn get_first_marker(line: &str, marker_size: i32) -> i32 {
     };
 
     for (i, marker) in line[3..].chars().enumerate() {
-        if is_marker(marker, i as i32, &line[i..i+marker_size as usize]) {
-            return (i) as i32 + marker_size
+        if is_marker(marker, i as i32, &line[i..i + marker_size as usize]) {
+            return (i) as i32 + marker_size;
         }
     }
 
     0
 }
 
+use std::cell::{Ref, RefCell};
+use std::rc::Rc;
+use std::borrow::Borrow;
+
+#[derive(Debug)]
+struct TreeNode {
+    value: Option<i32>, // Optional the node has a integer value, the file-size
+    children: HashMap<String, Rc<RefCell<TreeNode>>>, // Children of the node
+    parent: Option<Rc<RefCell<TreeNode>>>, // Optional a parent
+}
+
+impl TreeNode {
+    pub fn new() -> TreeNode {
+        return TreeNode {
+            value: None,
+            children: HashMap::new(),
+            parent: None,
+        }
+    }
+
+    pub fn add_child(&mut self, key: String, new_node: Rc<RefCell<TreeNode>>) {
+        self.children.insert(key, new_node);
+    }
+
+    pub fn directories(&self, current: Rc<RefCell<TreeNode>>) -> Vec<Rc<RefCell<TreeNode>>> {
+        if let Some(value) = self.value {
+            return vec![];
+        }
+
+        let mut sub_dirs: Vec<Rc<RefCell<TreeNode>>> = self.children
+            .iter()
+            .flat_map(|(key, child)| {
+                let curr = Rc::clone(child);
+                let dirs = child.borrow_mut().directories(curr);
+
+                return dirs
+            })
+            .collect();
+
+        sub_dirs.push(current);
+        sub_dirs
+    }
+
+    pub fn calc_size(&self) -> i32 {
+        if let Some(value) = self.value {
+            return value;
+        }
+
+        return self.children
+            .iter()
+            .map(|(key, vals)| {
+                vals.borrow_mut().calc_size()
+            })
+            .sum::<i32>()
+    }
+
+    pub fn print(&self) -> String {
+        if let Some(value) = self.value {
+            return value.to_string();
+        }
+
+        return String::from("[")
+            + &self
+            .children
+            .iter()
+            .map(|(key, vals)| {
+                let tree = vals.borrow_mut().print();
+                format!("{} {}", key, tree)
+            }
+            )
+            .collect::<Vec<String>>()
+            .join(",")
+            + "]";
+    }
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+enum D7Line {
+    D7Cmd(D7Cmd),
+    D7Data(D7Data),
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+enum D7Cmd {
+    Cd(String),
+    Ls,
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+enum D7Data {
+    Dir(String),
+    File(String, i32),
+}
+
+fn parse_line(l: &&str) -> D7Line {
+    let parts: Vec<&str> = l.split(' ').collect();
+    match parts[0] {
+        "$" => {
+            // let args = parts[1..];
+            match parts[1] {
+                "ls" => D7Line::D7Cmd(D7Cmd::Ls),
+                "cd" => D7Line::D7Cmd(D7Cmd::Cd(parts[2].to_string())),
+                _ => panic!()
+            }
+        },
+        "dir" => D7Line::D7Data(D7Data::Dir(String::from(parts[1]))),
+        _ => D7Line::D7Data(D7Data::File(
+            String::from(parts[1]),
+            parts[0].parse::<i32>().unwrap()),
+        )
+    }
+}
+
+fn build_tree(lines: Vec<D7Line>) -> Rc<RefCell<TreeNode>> {
+    let root = Rc::new(RefCell::new(TreeNode::new()));
+    let mut current = Rc::clone(&root);
+
+    for l in lines {
+        match l {
+            D7Line::D7Cmd(cmd) => {
+                match cmd {
+                    D7Cmd::Cd(dir) => {
+                        if dir == "/" {
+                            let current_clone = Rc::clone(&current);
+                            current = Rc::clone(&root);
+                        } else if dir == ".." {
+                            let current_clone = Rc::clone(&current);
+                            current = Rc::clone(current_clone.borrow_mut().parent.as_ref().unwrap());
+                        } else {
+                            let current_clone = Rc::clone(&current);
+                            let child: Rc<RefCell<TreeNode>>  = Rc::clone(current_clone.borrow_mut().children.get(&dir).unwrap());
+                            current = Rc::clone(&child);
+                        }
+                    }
+                    _ => {}
+                }
+
+            }
+            D7Line::D7Data(data) => {
+                match data {
+                    D7Data::Dir(dir) => {
+                        let child = Rc::new(RefCell::new(TreeNode::new()));
+                        current.borrow_mut().children.insert(dir , Rc::clone(&child));
+
+                        child.borrow_mut().parent = Some(Rc::clone(&current));
+                    }
+
+                    D7Data::File(name, size) => {
+                        let child = Rc::new(RefCell::new(TreeNode::new()));
+
+                        current.borrow_mut().children.insert(name, Rc::clone(&child));
+
+                        let mut mut_child = child.borrow_mut();
+                        mut_child.parent = Some(Rc::clone(&current));
+                        mut_child.value = Some(size);
+                    }
+                }
+            }
+        }
+    }
+
+    return root;
+}
+
+fn parse_lines(contents: String) -> Vec<D7Line> {
+    let lines: Vec<&str> = contents.lines().collect();
+    lines.iter().map(parse_line).collect()
+}
+
 fn day7p1(contents: String) -> String {
-    String::new()
+    // https://applied-math-coding.medium.com/a-tree-structure-implemented-in-rust-8344783abd75
+    let lines = parse_lines(contents);
+    let tree = build_tree(lines);
+
+    let current = Rc::clone(&tree);
+    let dirs = tree.borrow_mut().directories(current);
+    let total_size = dirs.iter()
+        .map(|node | {
+            println!("Dir nodes: {}", node.borrow_mut().print());
+            node.borrow_mut().calc_size()
+        })
+        .filter(|x| {
+            x <= &100000
+        })
+        .sum::<i32>();
+
+    total_size.to_string()
 }
 
 fn day7p2(contents: String) -> String {
@@ -573,6 +765,7 @@ fn day25p2(contents: String) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
     use super::*;
 
     #[test]
@@ -587,5 +780,74 @@ mod tests {
         let r = get_first_marker("bvwbjplbgvbhsrlpgdmjqwftvncz", 4);
 
         assert_eq!(r, 5);
+    }
+
+    #[test]
+    fn test_parse_dir() {
+        let input = r#"$ cd /
+$ ls
+dir a"#;
+        let expected = vec![
+            D7Line::D7Cmd(D7Cmd::Cd(String::from("/"))),
+            D7Line::D7Cmd(D7Cmd::Ls),
+            D7Line::D7Data(D7Data::Dir(String::from("a"))),
+        ];
+
+        let r = parse_lines(input.to_string());
+
+        assert_eq!(r, expected);
+    }
+
+    #[test]
+    fn test_parse_dir_ext() {
+        let input = r#"$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k"#;
+        let expected = "95437";
+
+        let lines = parse_lines(input.to_string());
+        let tree = build_tree(lines);
+        let tree = tree.borrow_mut().print();
+
+        let out = day7p1(input.to_string());
+        assert_eq!(expected, out);
+    }
+
+    #[test]
+    fn test_build_tree() {
+        let lines = vec![
+            D7Line::D7Cmd(D7Cmd::Cd(String::from("/"))),
+            D7Line::D7Cmd(D7Cmd::Ls),
+            D7Line::D7Data(D7Data::File(String::from("b.txt"), 300)),
+            D7Line::D7Data(D7Data::Dir(String::from("a"))),
+            D7Line::D7Cmd(D7Cmd::Cd(String::from("a"))),
+            D7Line::D7Data(D7Data::File(String::from("c.txt"), 300)),
+        ];
+        let expected = "[b.txt 300,a [c.txt 300]]";
+
+        let tree = build_tree(lines);
+        let tree = tree.borrow_mut().print();
+
+        assert_eq!(tree, expected);
     }
 }
