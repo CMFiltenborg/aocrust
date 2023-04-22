@@ -603,7 +603,6 @@ fn day7p1(contents: String) -> String {
     let dirs = tree.borrow_mut().directories(current);
     let total_size = dirs.iter()
         .map(|node | {
-            println!("Dir nodes: {}", node.borrow_mut().print());
             node.borrow_mut().calc_size()
         })
         .filter(|x| {
@@ -615,7 +614,27 @@ fn day7p1(contents: String) -> String {
 }
 
 fn day7p2(contents: String) -> String {
-    String::new()
+    let lines = parse_lines(contents);
+    let tree = build_tree(lines);
+
+    let current = Rc::clone(&tree);
+    let dirs = tree.borrow_mut().directories(current);
+    let used_size = tree.borrow_mut().calc_size();
+    let unused = 70000000 - used_size;
+    let required_extra_size = 30000000 - unused;
+
+    let mut dir_sizes: Vec<i32> = dirs.iter()
+        .map(|node | {
+            node.borrow_mut().calc_size()
+        })
+        .filter(|x| {
+            x >= &required_extra_size
+        })
+        .collect();
+    dir_sizes.sort();
+    let answer = dir_sizes[0];
+
+    answer.to_string()
 }
 
 fn day8p1(contents: String) -> String {
@@ -799,7 +818,7 @@ dir a"#;
     }
 
     #[test]
-    fn test_parse_dir_ext() {
+    fn test_day_p1() {
         let input = r#"$ cd /
 $ ls
 dir a
@@ -830,6 +849,41 @@ $ ls
         let tree = tree.borrow_mut().print();
 
         let out = day7p1(input.to_string());
+        assert_eq!(expected, out);
+    }
+
+    #[test]
+    fn test_day_p2() {
+        let input = r#"$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k"#;
+        let expected = "24933642";
+
+        let lines = parse_lines(input.to_string());
+        let tree = build_tree(lines);
+        let tree = tree.borrow_mut().print();
+
+        let out = day7p2(input.to_string());
         assert_eq!(expected, out);
     }
 
