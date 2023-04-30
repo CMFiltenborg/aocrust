@@ -43,6 +43,8 @@ fn main() {
         (6, 2) => day6p2,
         (7, 1) => day7p1,
         (7, 2) => day7p2,
+        (8, 1) => day8p1,
+        (8, 2) => day8p2,
         _ => panic!("Unimplemented day")
     };
     let solution: String = callable(contents);
@@ -637,12 +639,106 @@ fn day7p2(contents: String) -> String {
     answer.to_string()
 }
 
+fn parse_char2int_force(c: char) -> i32 {
+    c.to_string().parse::<i32>().unwrap()
+}
+
 fn day8p1(contents: String) -> String {
-    String::new()
+    let lines: Vec<&str> = contents.lines().collect();
+    let field: Vec<Vec<i32>> = lines.iter()
+        .map(|x| x.chars().map(parse_char2int_force).collect())
+        .collect();
+    let width = field.first().unwrap().len();
+
+    fn is_visible(height: i32, adjacents: &Vec<i32>) -> bool {
+        height > *adjacents.iter().min().unwrap()
+    }
+
+    let trees: Vec<(usize, Vec<(usize, i32)>)> = lines.iter()
+        .map(|x| x.chars().map(parse_char2int_force).enumerate().collect())
+        .enumerate()
+        .collect();
+
+    let visibles = trees.iter()
+        .flat_map( |(i, row)| row.iter().map(move |(j, x)| (*i,*j,*x) ))
+        .map(|(i,j,height) | {
+            if i == 0 || i == field.len() - 1 {
+                return 1
+            }
+            if j == 0 || j == width - 1 {
+                return 1
+            }
+
+            let top: i32 = field[..i].iter().map(|x| x[j]).max().unwrap();
+            let down: i32 = field[i+1..].iter().map(|x| x[j]).max().unwrap();
+            let left: i32 = *field[i][..j].iter().max().unwrap();
+            let right: i32 = *field[i][j+1..].iter().max().unwrap();
+
+            let adjacents: Vec<i32> = vec![
+                top, down, left, right
+            ];
+
+            return if is_visible(height, &adjacents) {
+                1
+            } else {
+                0
+            }
+        })
+        .sum::<i32>();
+
+    visibles.to_string()
 }
 
 fn day8p2(contents: String) -> String {
-    String::new()
+    let lines: Vec<&str> = contents.lines().collect();
+    let field: Vec<Vec<i32>> = lines.iter()
+        .map(|x| x.chars().map(parse_char2int_force).collect())
+        .collect();
+    let width = field.first().unwrap().len();
+
+    let trees: Vec<(usize, Vec<(usize, i32)>)> = lines.iter()
+        .map(|x| x.chars().map(parse_char2int_force).enumerate().collect())
+        .enumerate()
+        .collect();
+
+    fn count_distance(height: i32, trees: &Vec<i32>) -> i32 {
+        let mut i = 0;
+        for tree in trees {
+            i += 1;
+            if tree >= &height {
+                return i;
+            }
+        }
+        i
+    }
+
+    let visibles = trees.iter()
+        .flat_map( |(i, row)| row.iter().map(move |(j, x)| (*i,*j,*x) ))
+        .map(|(i,j,height) | {
+            if i == 0 || i == field.len() - 1 {
+                return 0
+            }
+            if j == 0 || j == width - 1 {
+                return 0
+            }
+
+            let top: Vec<i32> = field[..i].iter().rev().map(|x| x[j]).collect();
+            let down: Vec<i32> = field[i+1..].iter().map(|x| x[j]).collect();
+            let left: Vec<i32> = field[i][..j].iter().copied().rev().collect();
+            let right: Vec<i32> = field[i][j+1..].to_vec();
+
+            let distances = vec![
+                count_distance(height, &top),
+                count_distance(height, &down),
+                count_distance(height, &left),
+                count_distance(height, &right),
+            ];
+
+            return distances.iter().fold(1, |x, y| x * y)
+        })
+        .max().unwrap();
+
+    visibles.to_string()
 }
 
 fn day9p1(contents: String) -> String {
@@ -818,7 +914,7 @@ dir a"#;
     }
 
     #[test]
-    fn test_day_p1() {
+    fn test_day7_p1() {
         let input = r#"$ cd /
 $ ls
 dir a
@@ -853,7 +949,7 @@ $ ls
     }
 
     #[test]
-    fn test_day_p2() {
+    fn test_day7_p2() {
         let input = r#"$ cd /
 $ ls
 dir a
@@ -888,20 +984,46 @@ $ ls
     }
 
     #[test]
-    fn test_build_tree() {
-        let lines = vec![
-            D7Line::D7Cmd(D7Cmd::Cd(String::from("/"))),
-            D7Line::D7Cmd(D7Cmd::Ls),
-            D7Line::D7Data(D7Data::File(String::from("b.txt"), 300)),
-            D7Line::D7Data(D7Data::Dir(String::from("a"))),
-            D7Line::D7Cmd(D7Cmd::Cd(String::from("a"))),
-            D7Line::D7Data(D7Data::File(String::from("c.txt"), 300)),
-        ];
-        let expected = "[b.txt 300,a [c.txt 300]]";
+    fn test_day8_p1() {
+        let input = r#"30373
+25512
+65332
+33549
+35390"#;
+        let expected = "21";
+        let out = day8p1(input.to_string());
 
-        let tree = build_tree(lines);
-        let tree = tree.borrow_mut().print();
-
-        assert_eq!(tree, expected);
+        assert_eq!(expected, out);
     }
+
+    #[test]
+    fn test_day8_p2() {
+        let input = r#"30373
+25512
+65332
+33549
+35390"#;
+        let expected = "8";
+        let out = day8p2(input.to_string());
+
+        assert_eq!(expected, out);
+    }
+
+    // #[test]
+    // fn test_build_tree() {
+    //     let lines = vec![
+    //         D7Line::D7Cmd(D7Cmd::Cd(String::from("/"))),
+    //         D7Line::D7Cmd(D7Cmd::Ls),
+    //         D7Line::D7Data(D7Data::File(String::from("b.txt"), 300)),
+    //         D7Line::D7Data(D7Data::Dir(String::from("a"))),
+    //         D7Line::D7Cmd(D7Cmd::Cd(String::from("a"))),
+    //         D7Line::D7Data(D7Data::File(String::from("c.txt"), 300)),
+    //     ];
+    //     let expected = "[b.txt 300,a [c.txt 300]]";
+    //
+    //     let tree = build_tree(lines);
+    //     let tree = tree.borrow_mut().print();
+    //
+    //     assert_eq!(tree, expected);
+    // }
 }
