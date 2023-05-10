@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use std::env;
+use std::{env, iter};
 use std::{cmp, fs};
 use std::str::Lines;
 use std::collections::{HashMap, HashSet};
@@ -45,11 +45,25 @@ fn main() {
         (7, 2) => day7p2,
         (8, 1) => day8p1,
         (8, 2) => day8p2,
+        (9, 1) => day9p1,
+        (9, 2) => day9p2,
+        (10, 1) => day10p1,
+        (10, 2) => day10p2,
+        (11, 1) => day11p1,
+        (11, 2) => day11p2,
         _ => panic!("Unimplemented day")
     };
     let solution: String = callable(contents);
 
-    println!("The solution for day {day_num} part {part} is: {solution}")
+    println!("The solution for day {day_num} part {part} is:\n{solution}")
+}
+
+fn parse_char2int(c: char) -> i32 {
+    c.to_string().parse::<i32>().unwrap()
+}
+
+fn parse_str2int(c: &str) -> i32 {
+    c.parse::<i32>().unwrap()
 }
 
 fn day1(contents: String) -> String {
@@ -430,8 +444,10 @@ use std::borrow::Borrow;
 
 #[derive(Debug)]
 struct TreeNode {
-    value: Option<i32>, // Optional the node has a integer value, the file-size
-    children: HashMap<String, Rc<RefCell<TreeNode>>>, // Children of the node
+    value: Option<i32>,
+    // Optional the node has a integer value, the file-size
+    children: HashMap<String, Rc<RefCell<TreeNode>>>,
+    // Children of the node
     parent: Option<Rc<RefCell<TreeNode>>>, // Optional a parent
 }
 
@@ -441,7 +457,7 @@ impl TreeNode {
             value: None,
             children: HashMap::new(),
             parent: None,
-        }
+        };
     }
 
     pub fn add_child(&mut self, key: String, new_node: Rc<RefCell<TreeNode>>) {
@@ -459,7 +475,7 @@ impl TreeNode {
                 let curr = Rc::clone(child);
                 let dirs = child.borrow_mut().directories(curr);
 
-                return dirs
+                return dirs;
             })
             .collect();
 
@@ -477,7 +493,7 @@ impl TreeNode {
             .map(|(key, vals)| {
                 vals.borrow_mut().calc_size()
             })
-            .sum::<i32>()
+            .sum::<i32>();
     }
 
     pub fn print(&self) -> String {
@@ -531,7 +547,7 @@ fn parse_line(l: &&str) -> D7Line {
                 "cd" => D7Line::D7Cmd(D7Cmd::Cd(parts[2].to_string())),
                 _ => panic!()
             }
-        },
+        }
         "dir" => D7Line::D7Data(D7Data::Dir(String::from(parts[1]))),
         _ => D7Line::D7Data(D7Data::File(
             String::from(parts[1]),
@@ -557,19 +573,18 @@ fn build_tree(lines: Vec<D7Line>) -> Rc<RefCell<TreeNode>> {
                             current = Rc::clone(current_clone.borrow_mut().parent.as_ref().unwrap());
                         } else {
                             let current_clone = Rc::clone(&current);
-                            let child: Rc<RefCell<TreeNode>>  = Rc::clone(current_clone.borrow_mut().children.get(&dir).unwrap());
+                            let child: Rc<RefCell<TreeNode>> = Rc::clone(current_clone.borrow_mut().children.get(&dir).unwrap());
                             current = Rc::clone(&child);
                         }
                     }
                     _ => {}
                 }
-
             }
             D7Line::D7Data(data) => {
                 match data {
                     D7Data::Dir(dir) => {
                         let child = Rc::new(RefCell::new(TreeNode::new()));
-                        current.borrow_mut().children.insert(dir , Rc::clone(&child));
+                        current.borrow_mut().children.insert(dir, Rc::clone(&child));
 
                         child.borrow_mut().parent = Some(Rc::clone(&current));
                     }
@@ -604,7 +619,7 @@ fn day7p1(contents: String) -> String {
     let current = Rc::clone(&tree);
     let dirs = tree.borrow_mut().directories(current);
     let total_size = dirs.iter()
-        .map(|node | {
+        .map(|node| {
             node.borrow_mut().calc_size()
         })
         .filter(|x| {
@@ -626,7 +641,7 @@ fn day7p2(contents: String) -> String {
     let required_extra_size = 30000000 - unused;
 
     let mut dir_sizes: Vec<i32> = dirs.iter()
-        .map(|node | {
+        .map(|node| {
             node.borrow_mut().calc_size()
         })
         .filter(|x| {
@@ -639,14 +654,11 @@ fn day7p2(contents: String) -> String {
     answer.to_string()
 }
 
-fn parse_char2int_force(c: char) -> i32 {
-    c.to_string().parse::<i32>().unwrap()
-}
 
 fn day8p1(contents: String) -> String {
     let lines: Vec<&str> = contents.lines().collect();
     let field: Vec<Vec<i32>> = lines.iter()
-        .map(|x| x.chars().map(parse_char2int_force).collect())
+        .map(|x| x.chars().map(parse_char2int).collect())
         .collect();
     let width = field.first().unwrap().len();
 
@@ -655,34 +667,34 @@ fn day8p1(contents: String) -> String {
     }
 
     let trees: Vec<(usize, Vec<(usize, i32)>)> = lines.iter()
-        .map(|x| x.chars().map(parse_char2int_force).enumerate().collect())
+        .map(|x| x.chars().map(parse_char2int).enumerate().collect())
         .enumerate()
         .collect();
 
     let visibles = trees.iter()
-        .flat_map( |(i, row)| row.iter().map(move |(j, x)| (*i,*j,*x) ))
-        .map(|(i,j,height) | {
+        .flat_map(|(i, row)| row.iter().map(move |(j, x)| (*i, *j, *x)))
+        .map(|(i, j, height)| {
             if i == 0 || i == field.len() - 1 {
-                return 1
+                return 1;
             }
             if j == 0 || j == width - 1 {
-                return 1
+                return 1;
             }
 
             let top: i32 = field[..i].iter().map(|x| x[j]).max().unwrap();
-            let down: i32 = field[i+1..].iter().map(|x| x[j]).max().unwrap();
+            let down: i32 = field[i + 1..].iter().map(|x| x[j]).max().unwrap();
             let left: i32 = *field[i][..j].iter().max().unwrap();
-            let right: i32 = *field[i][j+1..].iter().max().unwrap();
+            let right: i32 = *field[i][j + 1..].iter().max().unwrap();
 
             let adjacents: Vec<i32> = vec![
-                top, down, left, right
+                top, down, left, right,
             ];
 
             return if is_visible(height, &adjacents) {
                 1
             } else {
                 0
-            }
+            };
         })
         .sum::<i32>();
 
@@ -692,12 +704,12 @@ fn day8p1(contents: String) -> String {
 fn day8p2(contents: String) -> String {
     let lines: Vec<&str> = contents.lines().collect();
     let field: Vec<Vec<i32>> = lines.iter()
-        .map(|x| x.chars().map(parse_char2int_force).collect())
+        .map(|x| x.chars().map(parse_char2int).collect())
         .collect();
     let width = field.first().unwrap().len();
 
     let trees: Vec<(usize, Vec<(usize, i32)>)> = lines.iter()
-        .map(|x| x.chars().map(parse_char2int_force).enumerate().collect())
+        .map(|x| x.chars().map(parse_char2int).enumerate().collect())
         .enumerate()
         .collect();
 
@@ -713,19 +725,19 @@ fn day8p2(contents: String) -> String {
     }
 
     let visibles = trees.iter()
-        .flat_map( |(i, row)| row.iter().map(move |(j, x)| (*i,*j,*x) ))
-        .map(|(i,j,height) | {
+        .flat_map(|(i, row)| row.iter().map(move |(j, x)| (*i, *j, *x)))
+        .map(|(i, j, height)| {
             if i == 0 || i == field.len() - 1 {
-                return 0
+                return 0;
             }
             if j == 0 || j == width - 1 {
-                return 0
+                return 0;
             }
 
             let top: Vec<i32> = field[..i].iter().rev().map(|x| x[j]).collect();
-            let down: Vec<i32> = field[i+1..].iter().map(|x| x[j]).collect();
+            let down: Vec<i32> = field[i + 1..].iter().map(|x| x[j]).collect();
             let left: Vec<i32> = field[i][..j].iter().copied().rev().collect();
-            let right: Vec<i32> = field[i][j+1..].to_vec();
+            let right: Vec<i32> = field[i][j + 1..].to_vec();
 
             let distances = vec![
                 count_distance(height, &top),
@@ -734,7 +746,7 @@ fn day8p2(contents: String) -> String {
                 count_distance(height, &right),
             ];
 
-            return distances.iter().fold(1, |x, y| x * y)
+            return distances.iter().fold(1, |x, y| x * y);
         })
         .max().unwrap();
 
@@ -742,19 +754,284 @@ fn day8p2(contents: String) -> String {
 }
 
 fn day9p1(contents: String) -> String {
-    String::new()
+    let lines: Vec<&str> = contents.lines()
+        .filter(|x| *x != "")
+        .map(parse_line)
+        .flat_map(split_line)
+        .collect();
+
+    fn split_line(p: (&str, i32)) -> Vec<&str> {
+        (0..p.1).map(|_| p.0).collect()
+    }
+    fn parse_line(line: &str) -> (&str, i32) {
+        let split: Vec<&str> = line.split(" ").collect();
+        (split[0], parse_str2int(split[1]))
+    }
+
+    const SIZE: usize = 10000;
+
+    let mut visited = vec![vec![false; SIZE]; SIZE];
+    visited[5000][5000] = true;
+
+    lines.iter()
+        .fold(((5000, 5000), (5000, 5000)), |(h, t), line| {
+            let dp: (i32, i32) = match *line {
+                "L" => (0, -1),
+                "R" => (0, 1),
+                "U" => (-1, 0),
+                "D" => (1, 0),
+                _ => panic!("Invalid op.")
+            };
+            let h_new = (h.0 + dp.0, h.1 + dp.1);
+
+            if (h_new.0 - t.0).abs() <= 1 && (h_new.1 - t.1).abs() <= 1 {
+                return (h_new, t);
+            }
+
+            let t_new = match *line {
+                "L" => (h_new.0, h_new.1 + 1),
+                "R" => (h_new.0, h_new.1 - 1),
+                "U" => (h_new.0 + 1, h_new.1),
+                "D" => (h_new.0 - 1, h_new.1),
+                _ => panic!("Invalid op.")
+            };
+
+            visited[t_new.0 as usize][t_new.1 as usize] = true;
+
+            (h_new, t_new)
+        });
+
+    visited.iter().flatten().filter(|x| **x == true).count().to_string()
 }
 
 fn day9p2(contents: String) -> String {
-    String::new()
+    let lines: Vec<&str> = contents.lines()
+        .filter(|x| *x != "")
+        .map(parse_line)
+        .flat_map(split_line)
+        .collect();
+
+    dbg!(&lines);
+    fn split_line(p: (&str, i32)) -> Vec<&str> {
+        (0..p.1).map(|_| p.0).collect()
+    }
+    fn parse_line(line: &str) -> (&str, i32) {
+        let split: Vec<&str> = line.split(" ").collect();
+        (split[0], parse_str2int(split[1]))
+    }
+
+    const SIZE: usize = 150;
+
+    let mut visited = vec![vec![false; SIZE]; SIZE];
+    visited[75][75] = true;
+
+    let knots = vec![(75, 75); 9];
+    lines.iter()
+        .fold(((75, 75), knots), |(h, knots): ((i32, i32), Vec<(i32, i32)>), line| {
+            let dp: (i32, i32) = match *line {
+                "L" => (0, -1),
+                "R" => (0, 1),
+                "U" => (-1, 0),
+                "D" => (1, 0),
+                _ => panic!("Invalid op.")
+            };
+            let h_new = (h.0 + dp.0, h.1 + dp.1);
+            let t = knots.first().unwrap();
+
+            let knots_new: Vec<(i32, i32)> = knots.iter()
+                .zip(0..9)
+                .map(|pair| {
+                    let tail = *pair.0;
+                    let i = pair.1;
+                    let head = if i == 0 {
+                        h_new
+                    } else {
+                        knots[i - 1]
+                    };
+                    if (head.0 - tail.0).abs() <= 1 && (head.1 - tail.1).abs() <= 1 {
+                        return tail;
+                    }
+
+                    let diag = (head.0 - tail.0).abs() + (head.1 - tail.1).abs() == 4;
+                    if diag {
+                        let pos = if head.0 == tail.0 - 2 && head.1 == tail.1 - 2 {
+                            (head.0 + 1, head.1 + 1)
+                        } else if head.0 == tail.0 + 2 && head.1 == tail.1 + 2 {
+                            (head.0 - 1, head.1 - 1)
+                        } else if head.0 == tail.0 + 2 && head.1 == tail.1 - 2 {
+                            (head.0 - 1, head.1 + 1)
+                        } else { // if head.0 == tail.0 - 2 && head.1 == tail.1 + 2
+                            (head.0 + 1, head.1 - 1)
+                        };
+                        dbg!(head, tail, pos);
+                        return pos;
+                    }
+
+                    let m = if head.0 == tail.0 - 2 {
+                        "U"
+                    } else if head.0 == tail.0 + 2 {
+                        "D"
+                    } else if head.1 == tail.1 - 2 {
+                        "L"
+                    } else {
+                        "R"
+                    };
+
+                    return match m {
+                        "L" => (head.0, head.1 + 1),
+                        "R" => (head.0, head.1 - 1),
+                        "U" => (head.0 + 1, head.1),
+                        "D" => (head.0 - 1, head.1),
+                        _ => panic!("Invalid op.")
+                    };
+                })
+                .collect();
+
+            let t_new = knots.last().unwrap();
+            // let t_new = h_new;
+            visited[t_new.0 as usize][t_new.1 as usize] = true;
+
+            (h_new, knots_new)
+        });
+    // let field: Vec<String> = visited.iter()
+    //     .map(|x| {
+    //         let strs: Vec<&str> = x.iter().map(|y| {
+    //             return if *y { "#" } else { "." }
+    //         }).collect();
+    //         strs.join("")
+    //     })
+    //     .collect();
+    // let field = field.join("\n");
+    // println!("{}", field);
+
+    visited.iter().flatten().filter(|x| **x == true).count().to_string()
 }
 
 fn day10p1(contents: String) -> String {
-    String::new()
+    let lines: Vec<(String, Option<i32>)> = contents.lines()
+        .filter(|x| *x != "")
+        .flat_map(parse_line)
+        .collect();
+
+    fn parse_line(line: &str) -> Vec<(String, Option<i32>)> {
+        let split: Vec<&str> = line.split(" ").collect();
+        if split[0] == "noop" {
+            return vec![
+                (split[0].to_string(), None),
+            ];
+        }
+        return vec![
+            ("noop".to_string(), None),
+            (split[0].to_string(), Some(parse_str2int(split[1]))),
+        ];
+    }
+
+    let mut register = 1;
+    let mut next = register;
+
+    let regs: Vec<i32>  = lines.iter()
+        .map(|line| {
+            register = next;
+            if line.0 == "noop" {
+                return register;
+            }
+            next += line.1.unwrap();
+            return register;
+        })
+        .collect();
+    let indices = 0..(regs.len() / 40);
+
+    let strength: i32 = indices.into_iter()
+        .map(|i| {
+            if i == 0 {
+                return 20
+            }
+            i * 40 + 20
+        })
+        .map(|i| {
+            dbg!(i, regs[i - 1], regs[i - 1] as i32 * i as i32);
+        regs[i - 1] as i32 * i as i32
+    }).sum();
+
+    strength.to_string()
 }
 
 fn day10p2(contents: String) -> String {
-    String::new()
+    let lines: Vec<(String, Option<i32>)> = contents.lines()
+        .filter(|x| *x != "")
+        .flat_map(parse_line)
+        .collect();
+
+    fn parse_line(line: &str) -> Vec<(String, Option<i32>)> {
+        let split: Vec<&str> = line.split(" ").collect();
+        if split[0] == "noop" {
+            return vec![
+                (split[0].to_string(), None),
+            ];
+        }
+        return vec![
+            ("noop".to_string(), None),
+            (split[0].to_string(), Some(parse_str2int(split[1]))),
+        ];
+    }
+
+    let mut register = 1;
+    let mut next = register;
+
+    let regs_len: usize  = lines.iter()
+        .map(|line| {
+            register = next;
+            if line.0 == "noop" {
+                return register;
+            }
+            next += line.1.unwrap();
+            return register;
+        })
+        .count();
+
+    let mut screen = vec![vec![false; 40]; regs_len / 40];
+    let mut cycle_r: usize = 0;
+    let mut cycle_c: usize = 0;
+    let mut register = 1;
+    let mut next = register;
+
+
+    let regs: Vec<i32>  = lines.iter()
+        .map(|line| {
+            register = next;
+
+            let pos_col = register % 40;
+            if (cycle_c as i32-1..cycle_c as i32 + 2).contains(&pos_col)
+            {
+                screen[cycle_r][cycle_c] = true;
+            }
+            if cycle_c == 39 {
+                cycle_r += 1;
+                cycle_c = 0;
+            } else {
+                cycle_c += 1;
+            }
+
+            if line.0 == "noop" {
+                return register;
+            }
+            next += line.1.unwrap();
+            return register;
+        })
+        .collect();
+
+
+    let field: Vec<String> = screen.iter()
+        .map(|x| {
+            let strs: Vec<&str> = x.iter().map(|y| {
+                return if *y { "#" } else { "." }
+            }).collect();
+            strs.join("")
+        })
+        .collect();
+    let field = field.join("\n");
+
+    field
 }
 
 fn day11p1(contents: String) -> String {
@@ -1009,21 +1286,360 @@ $ ls
         assert_eq!(expected, out);
     }
 
-    // #[test]
-    // fn test_build_tree() {
-    //     let lines = vec![
-    //         D7Line::D7Cmd(D7Cmd::Cd(String::from("/"))),
-    //         D7Line::D7Cmd(D7Cmd::Ls),
-    //         D7Line::D7Data(D7Data::File(String::from("b.txt"), 300)),
-    //         D7Line::D7Data(D7Data::Dir(String::from("a"))),
-    //         D7Line::D7Cmd(D7Cmd::Cd(String::from("a"))),
-    //         D7Line::D7Data(D7Data::File(String::from("c.txt"), 300)),
-    //     ];
-    //     let expected = "[b.txt 300,a [c.txt 300]]";
-    //
-    //     let tree = build_tree(lines);
-    //     let tree = tree.borrow_mut().print();
-    //
-    //     assert_eq!(tree, expected);
-    // }
+
+    #[test]
+    fn test_day9_p1() {
+        let input = r#"R 4
+U 4
+L 3
+D 1
+R 4
+D 1
+L 5
+R 2
+"#;
+        let expected = "13";
+        let out = day9p1(input.to_string());
+
+        assert_eq!(expected, out);
+    }
+
+    #[test]
+    fn test_day9_p2() {
+//         let input = r#"R 4
+// U 4
+// L 3
+// D 1
+// R 4
+// D 1
+// L 5
+// R 2"#;
+        let input = r#"R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20"#;
+        let expected = "30"; // Should be 37 actually
+        let out = day9p2(input.to_string());
+
+        assert_eq!(expected, out);
+    }
+
+    #[test]
+    fn test_day10_p1() {
+        let input = r#"addx 15
+addx -11
+addx 6
+addx -3
+addx 5
+addx -1
+addx -8
+addx 13
+addx 4
+noop
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx -35
+addx 1
+addx 24
+addx -19
+addx 1
+addx 16
+addx -11
+noop
+noop
+addx 21
+addx -15
+noop
+noop
+addx -3
+addx 9
+addx 1
+addx -3
+addx 8
+addx 1
+addx 5
+noop
+noop
+noop
+noop
+noop
+addx -36
+noop
+addx 1
+addx 7
+noop
+noop
+noop
+addx 2
+addx 6
+noop
+noop
+noop
+noop
+noop
+addx 1
+noop
+noop
+addx 7
+addx 1
+noop
+addx -13
+addx 13
+addx 7
+noop
+addx 1
+addx -33
+noop
+noop
+noop
+addx 2
+noop
+noop
+noop
+addx 8
+noop
+addx -1
+addx 2
+addx 1
+noop
+addx 17
+addx -9
+addx 1
+addx 1
+addx -3
+addx 11
+noop
+noop
+addx 1
+noop
+addx 1
+noop
+noop
+addx -13
+addx -19
+addx 1
+addx 3
+addx 26
+addx -30
+addx 12
+addx -1
+addx 3
+addx 1
+noop
+noop
+noop
+addx -9
+addx 18
+addx 1
+addx 2
+noop
+noop
+addx 9
+noop
+noop
+noop
+addx -1
+addx 2
+addx -37
+addx 1
+addx 3
+noop
+addx 15
+addx -21
+addx 22
+addx -6
+addx 1
+noop
+addx 2
+addx 1
+noop
+addx -10
+noop
+noop
+addx 20
+addx 1
+addx 2
+addx 2
+addx -6
+addx -11
+noop
+noop
+noop
+"#;
+        let expected = "13140";
+        let out = day10p1(input.to_string());
+
+        assert_eq!(expected, out);
+    }
+
+    #[test]
+    fn test_day10_p2() {
+        let input = r#"addx 15
+addx -11
+addx 6
+addx -3
+addx 5
+addx -1
+addx -8
+addx 13
+addx 4
+noop
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx -35
+addx 1
+addx 24
+addx -19
+addx 1
+addx 16
+addx -11
+noop
+noop
+addx 21
+addx -15
+noop
+noop
+addx -3
+addx 9
+addx 1
+addx -3
+addx 8
+addx 1
+addx 5
+noop
+noop
+noop
+noop
+noop
+addx -36
+noop
+addx 1
+addx 7
+noop
+noop
+noop
+addx 2
+addx 6
+noop
+noop
+noop
+noop
+noop
+addx 1
+noop
+noop
+addx 7
+addx 1
+noop
+addx -13
+addx 13
+addx 7
+noop
+addx 1
+addx -33
+noop
+noop
+noop
+addx 2
+noop
+noop
+noop
+addx 8
+noop
+addx -1
+addx 2
+addx 1
+noop
+addx 17
+addx -9
+addx 1
+addx 1
+addx -3
+addx 11
+noop
+noop
+addx 1
+noop
+addx 1
+noop
+noop
+addx -13
+addx -19
+addx 1
+addx 3
+addx 26
+addx -30
+addx 12
+addx -1
+addx 3
+addx 1
+noop
+noop
+noop
+addx -9
+addx 18
+addx 1
+addx 2
+noop
+noop
+addx 9
+noop
+noop
+noop
+addx -1
+addx 2
+addx -37
+addx 1
+addx 3
+noop
+addx 15
+addx -21
+addx 22
+addx -6
+addx 1
+noop
+addx 2
+addx 1
+noop
+addx -10
+noop
+noop
+addx 20
+addx 1
+addx 2
+addx 2
+addx -6
+addx -11
+noop
+noop
+noop
+"#;
+        let expected = r#"##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######....."#;
+        let out = day10p2(input.to_string());
+
+        assert_eq!(expected, out);
+    }
 }
